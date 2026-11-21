@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#17164b">
+<title>SnapFind — Event Photo Finder</title>
+<style>
+:root{--ink:#172033;--muted:#68738b;--line:#e4e8f1;--blue:#5148d9;--bg:#f5f6fb;--white:#fff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 Inter,system-ui,Arial,sans-serif}
+.wrap{max-width:1120px;margin:auto;padding:24px}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:22px}
+.brand{font-size:25px;font-weight:900;letter-spacing:-1px}.brand span{color:var(--blue)}.muted{color:var(--muted)}
+.hero{background:linear-gradient(120deg,#1b194b,#5148d9 70%,#8178f5);color:white;padding:34px;border-radius:24px;margin-bottom:20px}
+.hero h1{font-size:clamp(30px,5vw,46px);line-height:1.08;margin:0 0 12px}.hero p{max-width:680px;color:#e6e5ff;margin:0}
+.tabs{display:flex;gap:9px;margin:18px 0}.tab,.btn{border:0;border-radius:12px;padding:12px 17px;font-weight:750;cursor:pointer}
+.tab{background:white;color:var(--muted);border:1px solid var(--line)}.tab.active,.btn{background:var(--blue);color:white}
+.btn.secondary{background:#edf0f8;color:#303950}.btn:disabled{opacity:.45;cursor:not-allowed}
+.panel{background:white;border:1px solid var(--line);border-radius:20px;padding:24px;margin-bottom:18px;box-shadow:0 8px 24px #17203308}
+h2{margin:0 0 5px;font-size:22px}.sub{color:var(--muted);margin:0 0 18px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}.drop{border:1.5px dashed #b8c0d4;background:#fafbff;border-radius:16px;padding:22px;min-height:150px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:9px}
+.drop strong{font-size:16px}.drop small{color:var(--muted)}input[type=file],input[type=text]{max-width:100%;font:inherit}
+input[type=text]{padding:11px 12px;border:1px solid var(--line);border-radius:10px;width:min(100%,360px)}
+.check{display:flex;gap:9px;align-items:flex-start;color:#4e5870;font-size:13px;margin:15px 0}.check input{margin-top:4px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:15px}.status{margin-top:14px;color:var(--muted);font-size:14px;white-space:pre-wrap}
+.gallery{display:grid;grid-template-columns:repeat(auto-fill,minmax(165px,1fr));gap:12px;margin-top:18px}
+.photo{border:1px solid var(--line);border-radius:13px;overflow:hidden;background:white}.photo img{width:100%;height:165px;object-fit:cover;display:block}.photo div{padding:9px;font-size:12px;color:var(--muted);overflow-wrap:anywhere}
+.hidden{display:none!important}.note{background:#fff8e8;border:1px solid #f4dfaa;color:#775b18;padding:13px 15px;border-radius:12px;font-size:13px;margin:16px 0}
+.progress{height:8px;background:#eceefa;border-radius:99px;overflow:hidden;margin-top:12px}.progress>i{display:block;height:100%;width:0;background:var(--blue);transition:width .2s}
+footer{text-align:center;color:var(--muted);font-size:12px;padding:20px}
+@media(max-width:700px){.wrap{padding:14px}.hero{padding:25px}.grid{grid-template-columns:1fr}.panel{padding:17px}.top{align-items:flex-start;flex-direction:column}}
+</style>
+</head>
+<body><main class="wrap">
+<header class="top"><div><div class="brand">Snap<span>Find</span> ✦</div><div class="muted">Your event photos, easier to find</div></div><div class="muted">Consent-first · Browser-based matching</div></header>
+<section class="hero"><h1>Find your moments<br>in one simple search.</h1><p>Upload approved event photos, then let participants search for photos containing their own face. Face analysis runs in this browser; images are not sent to a SnapFind server.</p></section>
+<nav class="tabs"><button class="tab active" id="searchTab">Find my photos</button><button class="tab" id="adminTab">Organizer gallery</button></nav>
+
+<section class="panel" id="searchPanel">
+<h2>Find photos with your selfie</h2><p class="sub">Choose the event code and upload a clear photo of yourself.</p>
+<div class="grid">
+<div class="drop"><strong>📷 Your selfie</strong><small>One face, front-facing, good lighting</small><input id="selfie" type="file" accept="image/*"></div>
+<div class="drop"><strong>🔐 Event access</strong><small>Enter the event code shared by the organizer</small><input id="eventCode" type="text" placeholder="e.g. GCE-ALUMNI-2026"></div>
+</div>
+<label class="check"><input type="checkbox" id="selfConsent"><span>I confirm this is my own photo and I agree to use it for this event's photo search. I understand face matching can make mistakes.</span></label>
+<div class="row"><button class="btn" id="searchBtn" disabled>Search my photos</button><button class="btn secondary" id="clearResults">Clear results</button></div>
+<div class="progress hidden" id="searchProgress"><i id="searchBar"></i></div>
+<div class="status" id="searchStatus">Add your selfie and event code. The organizer must first index approved photos on this same browser/device.</div>
+<div class="gallery" id="results"></div>
+</section>
+
+<section class="panel hidden" id="adminPanel">
+<h2>Organizer gallery setup</h2><p class="sub">Select the event code and add photos for which sharing permission has been obtained.</p>
+<div class="row"><label>Event code<br><input id="adminCode" type="text" placeholder="e.g. GCE-ALUMNI-2026"></label></div>
+<div class="drop" style="margin-top:15px"><strong>🗂️ Upload event photos</strong><small>Select multiple JPG, PNG or WebP images</small><input id="galleryFiles" type="file" accept="image/*" multiple></div>
+<label class="check"><input type="checkbox" id="adminConsent"><span>I confirm that the people in these photos have been informed and have agreed to this event's photo-sharing and face-matching process.</span></label>
+<div class="row"><button class="btn" id="indexBtn" disabled>Index approved photos</button><button class="btn secondary" id="showCount">Show saved gallery count</button><button class="btn secondary" id="deleteGallery">Delete this event's local gallery</button></div>
+<div class="progress hidden" id="indexProgress"><i id="indexBar"></i></div>
+<div class="status" id="adminStatus">No photos selected. Indexing may take a while for large batches.</div>
+<div class="gallery" id="adminPreview"></div>
+</section>
+<div class="note"><b>Important privacy limits:</b> Use only with explicit permission from the people photographed. This app creates face templates in the browser's local database. It does not upload photos, but browser storage is not a secure multi-user cloud service. Anyone using this same browser profile may access the local gallery. Delete the event gallery after the event. Do not use this for surveillance, attendance tracking, or identifying people who have not opted in.</div>
+<footer>SnapFind · Local browser edition · Face matching is approximate and may miss photos or show false matches.</footer>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/dist/face-api.js"></script>
+<script>
+const $=id=>document.getElementById(id);
+const MODEL_URL='https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.15/model/';
+const DB_NAME='snapfind-local-v1', STORE='photos';
+let selectedFiles=[], modelsReady=false, dbPromise;
+
+function switchTab(which){$('searchPanel').classList.toggle('hidden',which!=='search');$('adminPanel').classList.toggle('hidden',which!=='admin');$('searchTab').classList.toggle('active',which==='search');$('adminTab').classList.toggle('active',which==='admin')}
+$('searchTab').onclick=()=>switchTab('search');$('adminTab').onclick=()=>switchTab('admin');
+
+function openDB(){if(dbPromise)return dbPromise;dbPromise=new Promise((resolve,reject)=>{const req=indexedDB.open(DB_NAME,1);req.onupgradeneeded=()=>req.result.createObjectStore(STORE,{keyPath:'id',autoIncrement:true});req.onsuccess=()=>resolve(req.result);req.onerror=()=>reject(req.error)});return dbPromise}
+async function putPhoto(record){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).add(record);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error)})}
+async function getPhotos(code){const db=await openDB();return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readonly'),req=tx.objectStore(STORE).getAll();req.onsuccess=()=>res(req.result.filter(x=>x.code===code));req.onerror=()=>rej(req.error)})}
+async function deleteCode(code){const db=await openDB();const all=await getPhotos(code);return new Promise((res,rej)=>{const tx=db.transaction(STORE,'readwrite'),s=tx.objectStore(STORE);all.forEach(x=>s.delete(x.id));tx.oncomplete=()=>res(all.length);tx.onerror=()=>rej(tx.error)})}
+async function loadModels(){if(modelsReady)return;if(!window.faceapi)throw Error('Face matching library could not load. Check internet connection and refresh.');$('adminStatus').textContent='Loading face-matching models (first time only)…';await Promise.all([faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL),faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL)]);modelsReady=true}
+function setProgress(id,bar,p){$(id).classList.remove('hidden');$(bar).style.width=Math.round(p*100)+'%'}
+function fileImage(file){return new Promise((resolve,reject)=>{const u=URL.createObjectURL(file),img=new Image();img.onload=()=>{URL.revokeObjectURL(u);resolve(img)};img.onerror=()=>{URL.revokeObjectURL(u);reject(Error('Could not read '+file.name))};img.src=u})}
+function descriptorFromDetection(d){return Array.from(d.descriptor)}
+function distance(a,b){let s=0;for(let i=0;i<a.length;i++)s+=(a[i]-b[i])**2;return Math.sqrt(s)}
+function updateSearchButton(){$('searchBtn').disabled=!($('selfConsent').checked&&$('selfie').files.length&&$('eventCode').value.trim())}
+$('selfConsent').onchange=updateSearchButton;$('selfie').onchange=updateSearchButton;$('eventCode').oninput=updateSearchButton;
+$('galleryFiles').onchange=()=>{selectedFiles=[...$('galleryFiles').files];$('adminStatus').textContent=selectedFiles.length+' image(s) selected.';$('indexBtn').disabled=!(selectedFiles.length&&$('adminConsent').checked&&$('adminCode').value.trim())};
+$('adminConsent').onchange=()=>{$('indexBtn').disabled=!(selectedFiles.length&&$('adminConsent').checked&&$('adminCode').value.trim())};
+$('adminCode').oninput=()=>{$('indexBtn').disabled=!(selectedFiles.length&&$('adminConsent').checked&&$('adminCode').value.trim())};
+
+$('indexBtn').onclick=async()=>{const code=$('adminCode').value.trim();if(!code||!selectedFiles.length||!$('adminConsent').checked)return;$('indexBtn').disabled=true;$('adminPreview').innerHTML='';let ok=0,skip=0;
+try{await loadModels();for(let i=0;i<selectedFiles.length;i++){setProgress('indexProgress','indexBar',(i+1)/selectedFiles.length);$('adminStatus').textContent=`Processing ${i+1} of ${selectedFiles.length}: ${selectedFiles[i].name}`;
+try{const img=await fileImage(selectedFiles[i]);const detections=await faceapi.detectAllFaces(img).withFaceLandmarks().withFaceDescriptors();if(!detections.length){skip++;continue}
+const blob=selectedFiles[i];await putPhoto({code,name:blob.name,blob,faces:detections.map(d=>descriptorFromDetection(d)),createdAt:Date.now()});ok++}catch(e){skip++}}
+$('adminStatus').textContent=`Done. Indexed ${ok} photo(s); skipped ${skip} image(s) (no face found or unreadable). Saved only in this browser.`;
+}catch(e){$('adminStatus').textContent='Error: '+e.message}finally{$('indexBtn').disabled=false;$('indexBar').style.width='100%'}};
+$('showCount').onclick=async()=>{const code=$('adminCode').value.trim();if(!code){$('adminStatus').textContent='Enter an event code first.';return}const a=await getPhotos(code);$('adminStatus').textContent=`${a.length} indexed photo(s) saved locally for ${code}.`};
+$('deleteGallery').onclick=async()=>{const code=$('adminCode').value.trim();if(!code){$('adminStatus').textContent='Enter an event code first.';return}const n=await deleteCode(code);$('adminStatus').textContent=`Deleted ${n} local photo record(s) for ${code}.`;$('adminPreview').innerHTML=''};
+$('searchBtn').onclick=async()=>{const code=$('eventCode').value.trim(),file=$('selfie').files[0];if(!code||!file||!$('selfConsent').checked)return;$('searchBtn').disabled=true;$('results').innerHTML='';
+try{await loadModels();$('searchStatus').textContent='Analysing your selfie…';const img=await fileImage(file);const self=await faceapi.detectSingleFace(img).withFaceLandmarks().withFaceDescriptor();if(!self)throw Error('No clear face found in the selfie. Try another front-facing photo.');const rows=await getPhotos(code);if(!rows.length)throw Error('No indexed gallery found for this event code in this browser. Ask the organizer to set it up on this device.');let matches=[];
+for(let i=0;i<rows.length;i++){setProgress('searchProgress','searchBar',(i+1)/rows.length);for(const d of rows[i].faces){const dist=distance(descriptorFromDetection(self),d);if(dist<0.52){matches.push({row:rows[i],dist});break}}}
+matches.sort((a,b)=>a.dist-b.dist);$('searchStatus').textContent=matches.length?`Found ${matches.length} possible match(es). Review them carefully; matching is not guaranteed.`:'No likely matches found. Try a clearer selfie or check with the organizer.';
+for(const m of matches){const u=URL.createObjectURL(m.row.blob),card=document.createElement('div');card.className='photo';const im=document.createElement('img');im.src=u;const meta=document.createElement('div');meta.textContent=m.row.name+' · possible match';card.append(im,meta);$('results').append(card)}
+}catch(e){$('searchStatus').textContent='Search could not finish: '+e.message}finally{$('searchBtn').disabled=false}};
+$('clearResults').onclick=()=>{$('results').innerHTML='';$('searchStatus').textContent='Results cleared.';$('searchBar').style.width='0'};
+openDB().catch(e=>console.error(e));
+</script></body></html>
